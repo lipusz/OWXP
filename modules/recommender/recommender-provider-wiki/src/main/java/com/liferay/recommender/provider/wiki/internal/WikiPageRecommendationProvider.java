@@ -14,9 +14,17 @@
 
 package com.liferay.recommender.provider.wiki.internal;
 
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.OrderFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.recommender.provider.RecommendationProvider;
+import com.liferay.social.kernel.model.SocialActivity;
+import com.liferay.social.kernel.model.SocialActivityConstants;
+import com.liferay.social.kernel.service.SocialActivityLocalService;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageLocalService;
 
@@ -28,6 +36,7 @@ import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Tibor Lipusz
+ * @author Gergely Mathe
  */
 @Component(
 	immediate = true,
@@ -84,11 +93,48 @@ public class WikiPageRecommendationProvider
 		return null;
 	}
 
-	/**
-	 * TODO Giros
-	 */
 	protected List<WikiPage> getVisitedWikiPages(long userId) {
-		return null;
+		DynamicQuery socialActivityDynamicQuery =
+			_socialActivityLocalService.dynamicQuery();
+
+		Property userIdProperty = PropertyFactoryUtil.forName("userId");
+
+		socialActivityDynamicQuery.add(userIdProperty.eq(userId));
+
+		Property classNameIdProperty =
+			PropertyFactoryUtil.forName("classNameId");
+
+		socialActivityDynamicQuery.add(
+			classNameIdProperty.eq(
+				_portal.getClassNameId(WikiPage.class.getName())));
+
+		Property typeProperty = PropertyFactoryUtil.forName("type_");
+
+		socialActivityDynamicQuery.add(
+			typeProperty.eq(SocialActivityConstants.TYPE_VIEW));
+
+		socialActivityDynamicQuery.addOrder(
+			OrderFactoryUtil.desc("createDate"));
+
+		List<SocialActivity> socialActivities =
+			_socialActivityLocalService.dynamicQuery(
+				socialActivityDynamicQuery);
+
+		List<WikiPage> wikiPages = new ArrayList<>();
+
+		for (SocialActivity socialActivity : socialActivities) {
+			wikiPages.add(
+				_wikiPageLocalService.fetchPage(socialActivity.getClassPK()));
+		}
+
+		return wikiPages;
+	}
+
+	@Reference(unbind = "-")
+	protected void setSocialActivityLocalService(
+		SocialActivityLocalService socialActivityLocalService) {
+
+		_socialActivityLocalService = socialActivityLocalService;
 	}
 
 	@Reference(unbind = "-")
@@ -101,6 +147,10 @@ public class WikiPageRecommendationProvider
 	private static final Log _log = LogFactoryUtil.getLog(
 		WikiPageRecommendationProvider.class);
 
+	@Reference
+	private Portal _portal;
+
+	private SocialActivityLocalService _socialActivityLocalService;
 	private WikiPageLocalService _wikiPageLocalService;
 
 }
