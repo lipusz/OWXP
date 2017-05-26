@@ -1,0 +1,7 @@
+Bundle-Name: Liferay Recommender API
+Bundle-SymbolicName: com.liferay.recommender.api
+Bundle-Version: 0.0.1
+Export-Package:\
+	com.liferay.recommender.provider,\
+	com.liferay.recommender.service
+-includeresource: META-INF/service.xml=../recommender-service/service.xml

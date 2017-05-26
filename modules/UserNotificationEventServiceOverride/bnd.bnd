@@ -1,0 +1,3 @@
+Bundle-Name: UserNotificationEventServiceOverride
+Bundle-SymbolicName: com.liferay.user.notification.event.service
+Bundle-Version: 1.0.0
